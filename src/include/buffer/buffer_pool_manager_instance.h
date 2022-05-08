@@ -89,6 +89,13 @@ class BufferPoolManagerInstance : public BufferPoolManager {
   Page *NewPgImp(page_id_t *page_id) override;
 
   /**
+   * Find a free frame in free_list or a replaceable frame in lru_list
+   * @param frame_id
+   * @return false if the free frame does not exist, true otherwise
+   */
+  bool FindReplacePage(frame_id_t *frame_id);
+
+  /**
    * Deletes a page from the buffer pool.
    * @param page_id id of page to be deleted
    * @return false if the page exists but could not be deleted, true if the page didn't exist or deletion succeeded
