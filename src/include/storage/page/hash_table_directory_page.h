@@ -17,6 +17,7 @@
 #include <cstdlib>
 #include <string>
 
+#include "common/config.h"
 #include "storage/index/generic_key.h"
 #include "storage/page/hash_table_page_defs.h"
 
@@ -171,6 +172,8 @@ class HashTableDirectoryPage {
    */
   uint32_t GetLocalHighBit(uint32_t bucket_idx);
 
+  void Init(page_id_t bucket_page_id);
+
   /**
    * VerifyIntegrity
    *
@@ -191,6 +194,7 @@ class HashTableDirectoryPage {
   lsn_t lsn_;
   uint32_t global_depth_{0};
   uint8_t local_depths_[DIRECTORY_ARRAY_SIZE];
+  // each bucket has a unique id, the index conresponding to "hash() & global_depth_mask"
   page_id_t bucket_page_ids_[DIRECTORY_ARRAY_SIZE];
 };
 

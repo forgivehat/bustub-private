@@ -12,8 +12,13 @@
 
 #include "storage/page/hash_table_directory_page.h"
 #include <algorithm>
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
 #include <unordered_map>
+#include "common/config.h"
 #include "common/logger.h"
+#include "storage/page/hash_table_page_defs.h"
 
 namespace bustub {
 page_id_t HashTableDirectoryPage::GetPageId() const { return page_id_; }
@@ -24,31 +29,107 @@ lsn_t HashTableDirectoryPage::GetLSN() const { return lsn_; }
 
 void HashTableDirectoryPage::SetLSN(lsn_t lsn) { lsn_ = lsn; }
 
+page_id_t HashTableDirectoryPage::GetBucketPageId(uint32_t bucket_idx) { return bucket_page_ids_[bucket_idx]; }
+
+void HashTableDirectoryPage::SetBucketPageId(uint32_t bucket_idx, page_id_t bucket_page_id) {
+  bucket_page_ids_[bucket_idx] = bucket_page_id;
+}
+
+/*
+将二进制数1011 0010最高位取反,让其与1 << 7异或，得到0011 0010
+  1011 0010
+^ 1000 0000
+= 0011 0010
+
+3 011
+^ 100
+= 111 7
+
+2 10
+^ 11
+= 01 1
+
+0 00
+^ 11
+= 11 3
+*/
+uint32_t HashTableDirectoryPage::GetSplitImageIndex(uint32_t bucket_idx) {
+  uint32_t local_depth = GetLocalDepth(bucket_idx);
+  return bucket_idx ^ (1 << (local_depth - 1));
+}
+
+uint32_t HashTableDirectoryPage::GetGlobalDepthMask() {
+  // 2: 11   3: 111
+  return (1 << global_depth_) - 1;
+}
+
+uint32_t HashTableDirectoryPage::GetLocalDepthMask(uint32_t bucket_idx) {
+  uint32_t local_depth = local_depths_[bucket_idx];
+  return (1 << local_depth) - 1;
+}
+
 uint32_t HashTableDirectoryPage::GetGlobalDepth() { return global_depth_; }
 
-uint32_t HashTableDirectoryPage::GetGlobalDepthMask() { return 0; }
+/*
+global depth = 2
+4 buckets
 
-void HashTableDirectoryPage::IncrGlobalDepth() {}
+#3 bucket 11b full, local depth = 2
+local depth + 1 = 3 > global depth
+  increasing dir:
+  global depth = 3
+  8 buckets
+
+#3 bucket 011b, split image bucket: #7 bucket 111b
+*/
+void HashTableDirectoryPage::IncrGlobalDepth() {
+  assert(global_depth_ < 9);
+  int origin_num = 1 << global_depth_;
+  int new_idx = origin_num;
+  int origin_idx = 0;
+  while (origin_idx < origin_num) {
+    bucket_page_ids_[new_idx] = bucket_page_ids_[origin_idx];
+    local_depths_[new_idx] = local_depths_[origin_idx];
+    origin_idx++;
+    new_idx++;
+  }
+  global_depth_++;
+}
 
 void HashTableDirectoryPage::DecrGlobalDepth() { global_depth_--; }
 
-page_id_t HashTableDirectoryPage::GetBucketPageId(uint32_t bucket_idx) { return 0; }
+bool HashTableDirectoryPage::CanShrink() {
+  for (uint32_t i = 0; i < Size(); i++) {
+    uint32_t depth = local_depths_[i];
+    assert(depth <= global_depth_);
+    if (depth == global_depth_) {
+      return false;
+    }
+  }
+  return true;
+}
 
-void HashTableDirectoryPage::SetBucketPageId(uint32_t bucket_idx, page_id_t bucket_page_id) {}
+uint32_t HashTableDirectoryPage::Size() { return 1 << global_depth_; }
 
-uint32_t HashTableDirectoryPage::Size() { return 0; }
+uint32_t HashTableDirectoryPage::GetLocalDepth(uint32_t bucket_idx) { return local_depths_[bucket_idx]; }
 
-bool HashTableDirectoryPage::CanShrink() { return false; }
+void HashTableDirectoryPage::SetLocalDepth(uint32_t bucket_idx, uint8_t local_depth) {
+  assert(local_depth <= global_depth_);
+  local_depths_[bucket_idx] = local_depth;
+}
 
-uint32_t HashTableDirectoryPage::GetLocalDepth(uint32_t bucket_idx) { return 0; }
+void HashTableDirectoryPage::IncrLocalDepth(uint32_t bucket_idx) {
+  local_depths_[bucket_idx]++;
+  assert(local_depths_[bucket_idx] <= global_depth_);
+}
 
-void HashTableDirectoryPage::SetLocalDepth(uint32_t bucket_idx, uint8_t local_depth) {}
+void HashTableDirectoryPage::DecrLocalDepth(uint32_t bucket_idx) { local_depths_[bucket_idx]--; }
 
-void HashTableDirectoryPage::IncrLocalDepth(uint32_t bucket_idx) {}
-
-void HashTableDirectoryPage::DecrLocalDepth(uint32_t bucket_idx) {}
-
-uint32_t HashTableDirectoryPage::GetLocalHighBit(uint32_t bucket_idx) { return 0; }
+void HashTableDirectoryPage::Init(page_id_t bucket_page_id) {
+  SetBucketPageId(0, bucket_page_id);
+  SetLocalDepth(0, 0);
+  global_depth_ = 0;
+}
 
 /**
  * VerifyIntegrity - Use this for debugging but **DO NOT CHANGE**
@@ -93,7 +174,7 @@ void HashTableDirectoryPage::VerifyIntegrity() {
     uint32_t required_count = 0x1 << (global_depth_ - curr_ld);
 
     if (curr_count != required_count) {
-      LOG_WARN("Verify Integrity: curr_count: %u, required_count %u, for page_id: %u", curr_count, required_count,
+      LOG_WARN("Verify Integrity: curr_count: %u, required_count %u, for page_id: %u", curr_ld, required_count,
                curr_page_id);
       PrintDirectory();
       assert(curr_count == required_count);
