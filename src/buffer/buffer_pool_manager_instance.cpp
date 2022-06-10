@@ -15,7 +15,6 @@
 #include "common/macros.h"
 
 namespace bustub {
-
 BufferPoolManagerInstance::BufferPoolManagerInstance(size_t pool_size, DiskManager *disk_manager,
                                                      LogManager *log_manager)
     : BufferPoolManagerInstance(pool_size, 1, 0, disk_manager, log_manager) {}
@@ -29,13 +28,12 @@ BufferPoolManagerInstance::BufferPoolManagerInstance(size_t pool_size, uint32_t 
       disk_manager_(disk_manager),
       log_manager_(log_manager) {
   BUSTUB_ASSERT(num_instances > 0, "If BPI is not part of a pool, then the pool size should just be 1");
-  BUSTUB_ASSERT(
-      instance_index < num_instances,
-      "BPI index cannot be greater than the number of BPIs in the pool. In non-parallel case, index should just be 1.");
+  BUSTUB_ASSERT(instance_index < num_instances,
+                "BPI index cannot be greater than the number of BPIs in the pool. In non-parallel case, index should "
+                "just be 1.");
   // We allocate a consecutive memory space for the buffer pool.
   pages_ = new Page[pool_size_];
   replacer_ = new LRUReplacer(pool_size);
-
   // Initially, every page is in the free list.
   for (size_t i = 0; i < pool_size_; ++i) {
     free_list_.emplace_back(static_cast<int>(i));
@@ -177,7 +175,8 @@ bool BufferPoolManagerInstance::DeletePgImp(page_id_t page_id) {
   // 1.   Search the page table for the requested page (P).
   // 1.   If P does not exist, return true.
   // 2.   If P exists, but has a non-zero pin-count, return false. Someone is using the page.
-  // 3.   Otherwise, P can be deleted. Remove P from the page table, reset its metadata and return it to the free list.
+  // 3.   Otherwise, P can be deleted. Remove P from the page table, reset its metadata and return it to the free
+  // list.
   std::lock_guard<std::mutex> lock(latch_);
   DeallocatePage(page_id);
   if (page_table_.find(page_id) == page_table_.end()) {

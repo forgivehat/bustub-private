@@ -5,8 +5,10 @@
 #==============================================================================#
 # File extensions to be ignored anywhere in the tree.
 #==============================================================================#
+.devcontainer
+.cache
 # Temp files created by most text editors.
-*~
+i*~
 # Merge files created by git.
 *.orig
 # Java bytecode

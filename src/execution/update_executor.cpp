@@ -16,6 +16,9 @@
 
 #include "common/logger.h"
 #include "common/macros.h"
+#include "concurrency/lock_manager.h"
+#include "concurrency/transaction.h"
+#include "concurrency/transaction_manager.h"
 #include "execution/executors/update_executor.h"
 #include "storage/table/tuple.h"
 
@@ -30,6 +33,18 @@ void UpdateExecutor::Init() { table_info_ = exec_ctx_->GetCatalog()->GetTable(pl
 bool UpdateExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) {
   Tuple updated_tuple;
   while (child_executor_->Next(tuple, rid)) {
+    LockManager *lock_manager = exec_ctx_->GetLockManager();
+    Transaction *txn = exec_ctx_->GetTransaction();
+
+    if (txn->IsSharedLocked(*rid)) {
+      if (!lock_manager->LockUpgrade(txn, *rid)) {
+        throw TransactionAbortException(txn->GetTransactionId(), AbortReason::DEADLOCK);
+      }
+    } else {
+      if (!lock_manager->LockExclusive(txn, *rid)) {
+        throw TransactionAbortException(txn->GetTransactionId(), AbortReason::DEADLOCK);
+      }
+    }
     // LOG_DEBUG("tuple: %s, rid: %s", tuple->ToString(&table_info_->schema_).c_str(), rid->ToString().c_str());
 
     updated_tuple = GenerateUpdatedTuple(*tuple);
@@ -43,6 +58,11 @@ bool UpdateExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) {
 
     for (auto &index_info : exec_ctx_->GetCatalog()->GetTableIndexes(table_info_->name_)) {
       index_info->index_->InsertEntry(updated_tuple, updated_tuple.GetRid(), exec_ctx_->GetTransaction());
+      IndexWriteRecord index_write_record =
+          IndexWriteRecord(*rid, exec_ctx_->GetCatalog()->GetTable(plan_->TableOid())->oid_, WType::UPDATE,
+                           updated_tuple, index_info->index_oid_, exec_ctx_->GetCatalog());
+      index_write_record.old_tuple_ = *tuple;
+      txn->AppendTableWriteRecord(index_write_record);
     }
   }
   return false;

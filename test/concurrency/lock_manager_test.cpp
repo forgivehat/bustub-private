@@ -38,7 +38,7 @@ void BasicTest1() {
 
   std::vector<RID> rids;
   std::vector<Transaction *> txns;
-  int num_rids = 10;
+  int num_rids = 50;
   for (int i = 0; i < num_rids; i++) {
     RID rid{i, static_cast<uint32_t>(i)};
     rids.push_back(rid);
@@ -77,7 +77,7 @@ void BasicTest1() {
     delete txns[i];
   }
 }
-TEST(LockManagerTest, DISABLED_BasicTest) { BasicTest1(); }
+TEST(LockManagerTest, BasicTest) { BasicTest1(); }
 
 void TwoPLTest() {
   LockManager lock_mgr{};
@@ -110,7 +110,7 @@ void TwoPLTest() {
     // Size shouldn't change here
     CheckTxnLockSize(txn, 0, 1);
   } catch (TransactionAbortException &e) {
-    // std::cout << e.GetInfo() << std::endl;
+    std::cout << e.GetInfo() << std::endl;
     CheckAborted(txn);
     // Size shouldn't change here
     CheckTxnLockSize(txn, 0, 1);
@@ -123,7 +123,7 @@ void TwoPLTest() {
 
   delete txn;
 }
-TEST(LockManagerTest, DISABLED_TwoPLTest) { TwoPLTest(); }
+TEST(LockManagerTest, TwoPLTest) { TwoPLTest(); }
 
 void UpgradeTest() {
   LockManager lock_mgr{};
@@ -150,7 +150,7 @@ void UpgradeTest() {
   txn_mgr.Commit(&txn);
   CheckCommitted(&txn);
 }
-TEST(LockManagerTest, DISABLED_UpgradeLockTest) { UpgradeTest(); }
+TEST(LockManagerTest, UpgradeLockTest) { UpgradeTest(); }
 
 void WoundWaitBasicTest() {
   LockManager lock_mgr{};
@@ -202,6 +202,6 @@ void WoundWaitBasicTest() {
   txn_mgr.Commit(&txn_hold);
   CheckCommitted(&txn_hold);
 }
-TEST(LockManagerTest, DISABLED_WoundWaitBasicTest) { WoundWaitBasicTest(); }
+TEST(LockManagerTest, WoundWaitBasicTest) { WoundWaitBasicTest(); }
 
 }  // namespace bustub

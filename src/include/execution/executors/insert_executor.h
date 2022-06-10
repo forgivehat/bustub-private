@@ -68,7 +68,7 @@ class InsertExecutor : public AbstractExecutor {
 
   TableInfo *table_info_;
 
-  std::vector<Tuple> child_inserts_;
+  std::vector<Tuple> insert_tuples_;
 };
 
 }  // namespace bustub
