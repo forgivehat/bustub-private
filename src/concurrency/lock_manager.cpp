@@ -92,7 +92,7 @@ bool LockManager::NeedWaitShared(Transaction *txn, const RID &rid) {
       }
       continue;
     }
-    // 存在比当前txn老的txn且持写锁
+    // 存在比当前txn老的txn且请求写锁
     if (iter->lock_mode_ == LockMode::EXCLUSIVE) {
       need_wait = true;
     }
