@@ -271,6 +271,8 @@ void HASH_TABLE_TYPE::Merge(Transaction *transaction, const KeyType &key, const 
   }
 
   if (local_depth != dir_page->GetLocalDepth(image_bucket_index)) {
+    // LOG_DEBUG("target_bucket_index:%u 's local dep is %u", target_bucket_index, local_depth);
+    // LOG_DEBUG("image_bucket_index:%u 's local dep is %u\n", image_bucket_index, dir_page->GetLocalDepth(image_bucket_index));
     assert(buffer_pool_manager_->UnpinPage(dir_page->GetPageId(), false));
     table_latch_.WUnlock();
     return;

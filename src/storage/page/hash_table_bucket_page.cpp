@@ -106,7 +106,18 @@ template <typename KeyType, typename ValueType, typename KeyComparator>
 bool HASH_TABLE_BUCKET_TYPE::IsReadable(uint32_t bucket_idx) const {
   return readable_[bucket_idx >> 3] & (0x80 >> (bucket_idx & 0x07));
 }
-// bucket_idx % 8 == bucket_idx & 0x07
+
+/*
+ * bucket_idx & 0x07等价于bucket_idx % 8
+ * bucket_id >> 3等价于bucket_idx / 8
+ * 0x80 = 128d = 1000 0000b
+ * 将BUCKET_ARRAY_SIZE个位置的被使用情况用char数组存放
+ * 一个char为8bit, 因此index为#0到#7的使用情况存放在char数组的第一个元素中
+ * 以#22为例, 22的二进制表示为0001 0110, 按一个char存8个位置信息计算
+ * 0001 0110 >> 3 = 00010 = 2(22 / 8 = 2 mod 6), 因此#22存放在char数组下标
+ * 为2，即数组的第3个元素处, 而取余得到的6表示这个char元素从左往右索引为6的位置bit位表示#22(从0开始)
+ * 即xxxxxx-x, 同时不难看出char个元素存放的index范围是#16到#23,
+*/ 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 void HASH_TABLE_BUCKET_TYPE::SetReadable(uint32_t bucket_idx) {
   readable_[bucket_idx >> 3] |= (0x80 >> (bucket_idx & 0x07));

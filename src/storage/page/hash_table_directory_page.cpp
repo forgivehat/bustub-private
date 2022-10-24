@@ -36,7 +36,7 @@ void HashTableDirectoryPage::SetBucketPageId(uint32_t bucket_idx, page_id_t buck
 }
 
 /*
-将二进制数1011 0010最高位取反,让其与1 << 7异或，得到0011 0010
+若要将二进制数1011 0010最高位取反,只需让其与1 << 7异或，得到0011 0010
   1011 0010
 ^ 1000 0000
 = 0011 0010
@@ -46,12 +46,12 @@ void HashTableDirectoryPage::SetBucketPageId(uint32_t bucket_idx, page_id_t buck
 = 111 7
 
 2 10
-^ 11
+^ 10
 = 01 1
 
 0 00
-^ 11
-= 11 3
+^ 10
+= 10 3
 */
 uint32_t HashTableDirectoryPage::GetSplitImageIndex(uint32_t bucket_idx) {
   uint32_t local_depth = GetLocalDepth(bucket_idx);
@@ -119,8 +119,8 @@ void HashTableDirectoryPage::SetLocalDepth(uint32_t bucket_idx, uint8_t local_de
 }
 
 void HashTableDirectoryPage::IncrLocalDepth(uint32_t bucket_idx) {
+  assert(local_depths_[bucket_idx]  <= global_depth_ - 1);
   local_depths_[bucket_idx]++;
-  assert(local_depths_[bucket_idx] <= global_depth_);
 }
 
 void HashTableDirectoryPage::DecrLocalDepth(uint32_t bucket_idx) { local_depths_[bucket_idx]--; }
