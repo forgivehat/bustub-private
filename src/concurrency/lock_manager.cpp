@@ -32,8 +32,8 @@ bool LockManager::LockShared(Transaction *txn, const RID &rid) {
     return false;
   }
 
-  // shrinking阶段不能加锁
-  if (txn->GetState() == TransactionState::SHRINKING) {
+  // 可重复读隔离级别下shrinking阶段不能加锁
+  if (txn->GetState() == TransactionState::SHRINKING && txn->GetIsolationLevel() == IsolationLevel::REPEATABLE_READ) {
     txn->SetState(TransactionState::ABORTED);
     throw TransactionAbortException(txn->GetTransactionId(), AbortReason::LOCK_ON_SHRINKING);
   }
@@ -271,6 +271,12 @@ bool LockManager::Unlock(Transaction *txn, const RID &rid) {
   if (txn->GetIsolationLevel() == IsolationLevel::REPEATABLE_READ && txn->GetState() == TransactionState::GROWING) {
     txn->SetState(TransactionState::SHRINKING);
   }
+
+  if (txn->GetIsolationLevel() != IsolationLevel::REPEATABLE_READ && txn->GetState() == TransactionState::GROWING &&
+      txn->IsExclusiveLocked(rid)) {
+    txn->SetState(TransactionState::SHRINKING);
+  }
+
   txn->GetSharedLockSet()->erase(rid);
   txn->GetExclusiveLockSet()->erase(rid);
   // LOG_DEBUG("{txn: %d} unlock on rid:(%d,%d) success!", txn->GetTransactionId(), rid.GetPageId(), rid.GetSlotNum());

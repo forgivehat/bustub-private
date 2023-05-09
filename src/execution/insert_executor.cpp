@@ -83,12 +83,6 @@ bool InsertExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) {
           IndexWriteRecord(*rid, exec_ctx_->GetCatalog()->GetTable(plan_->TableOid())->oid_, WType::INSERT, tuple,
                            table_index->index_oid_, exec_ctx_->GetCatalog()));
     }
-
-    if (txn->GetIsolationLevel() != IsolationLevel::REPEATABLE_READ) {
-      if (!lock_manager->Unlock(txn, *rid)) {
-        throw TransactionAbortException(txn->GetTransactionId(), AbortReason::DEADLOCK);
-      }
-    }
   }
 
   return false;

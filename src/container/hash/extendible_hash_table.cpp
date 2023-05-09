@@ -165,14 +165,14 @@ bool HASH_TABLE_TYPE::SplitInsert(Transaction *transaction, const KeyType &key, 
 
   uint32_t diff = 1 << dir_page->GetLocalDepth(split_bucket_index);
   for (uint32_t i = split_bucket_index; i >= 0; i -= diff) {
-    dir_page->SetBucketPageId(i, split_bucket_page_id);
+    // dir_page->SetBucketPageId(i, split_bucket_page_id);
     dir_page->SetLocalDepth(i, dir_page->GetLocalDepth(split_bucket_index));
     if (i < diff) {
       break;
     }
   }
   for (uint32_t i = split_bucket_index; i < dir_page->Size(); i += diff) {
-    dir_page->SetBucketPageId(i, split_bucket_page_id);
+    // dir_page->SetBucketPageId(i, split_bucket_page_id);
     dir_page->SetLocalDepth(i, dir_page->GetLocalDepth(split_bucket_index));
   }
   for (uint32_t i = image_bucket_index; i >= 0; i -= diff) {
@@ -272,7 +272,8 @@ void HASH_TABLE_TYPE::Merge(Transaction *transaction, const KeyType &key, const 
 
   if (local_depth != dir_page->GetLocalDepth(image_bucket_index)) {
     // LOG_DEBUG("target_bucket_index:%u 's local dep is %u", target_bucket_index, local_depth);
-    // LOG_DEBUG("image_bucket_index:%u 's local dep is %u\n", image_bucket_index, dir_page->GetLocalDepth(image_bucket_index));
+    // LOG_DEBUG("image_bucket_index:%u 's local dep is %u\n", image_bucket_index,
+    // dir_page->GetLocalDepth(image_bucket_index));
     assert(buffer_pool_manager_->UnpinPage(dir_page->GetPageId(), false));
     table_latch_.WUnlock();
     return;
@@ -281,13 +282,13 @@ void HASH_TABLE_TYPE::Merge(Transaction *transaction, const KeyType &key, const 
   HASH_TABLE_BUCKET_TYPE *target_bucket = FetchBucketPage(target_bucket_page_id);
   Page *target_page = reinterpret_cast<Page *>(target_bucket);
   target_page->RLatch();
-  if (!target_bucket->IsEmpty()) {
-    target_page->RUnlatch();
-    assert(buffer_pool_manager_->UnpinPage(target_bucket_page_id, false));
-    assert(buffer_pool_manager_->UnpinPage(dir_page->GetPageId(), false));
-    table_latch_.WUnlock();
-    return;
-  }
+  // if (!target_bucket->IsEmpty()) {
+  //   target_page->RUnlatch();
+  //   assert(buffer_pool_manager_->UnpinPage(target_bucket_page_id, false));
+  //   assert(buffer_pool_manager_->UnpinPage(dir_page->GetPageId(), false));
+  //   table_latch_.WUnlock();
+  //   return;
+  // }
 
   target_page->RUnlatch();
   assert(buffer_pool_manager_->UnpinPage(target_bucket_page_id, false));

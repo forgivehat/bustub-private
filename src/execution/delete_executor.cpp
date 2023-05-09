@@ -55,11 +55,6 @@ bool DeleteExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) {
           IndexWriteRecord(*rid, exec_ctx_->GetCatalog()->GetTable(plan_->TableOid())->oid_, WType::DELETE, *tuple,
                            index->index_oid_, exec_ctx_->GetCatalog()));
     }
-    if (txn->GetIsolationLevel() == IsolationLevel::READ_COMMITTED) {
-      if (!lock_manager->Unlock(txn, *rid)) {
-        throw TransactionAbortException(txn->GetTransactionId(), AbortReason::DEADLOCK);
-      }
-    }
   }
   return false;
 }

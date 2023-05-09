@@ -64,7 +64,7 @@ bool SeqScanExecutor::Next(Tuple *tuple, RID *rid) {
       Value val = col.GetExpr()->Evaluate(tuple, schema_);
       // LOG_DEBUG("value: %s\n", val.ToString().c_str());
       res.push_back(val);
-    }
+    }           
     if (lock_manager != nullptr && txn->GetIsolationLevel() == IsolationLevel::READ_COMMITTED) {
       if (!lock_manager->Unlock(txn, *rid)) {
         throw TransactionAbortException(txn->GetTransactionId(), AbortReason::DEADLOCK);
